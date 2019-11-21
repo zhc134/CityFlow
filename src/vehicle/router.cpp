@@ -34,7 +34,9 @@ namespace CityFlow {
                     candidateLanes.push_back(lane);
                 }
             }
-            assert(candidateLanes.size() > 0);
+//            std::cerr << route[0]->getId() << " " << route[1]->getId() << std::endl;
+            if (candidateLanes.size() <= 0)
+                throw std::runtime_error("invalid");
             return selectLane(nullptr, candidateLanes);
         }
     }

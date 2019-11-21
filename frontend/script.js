@@ -141,12 +141,14 @@ let debugMode = false;
 let chartLog;
 let showChart = false;
 let chartConainterDOM = document.getElementById("chart-container");
+
+let replayReader;
+
 function start() {
     if (loading) return;
     loading = true;
     infoReset();
     uploadFile(roadnetData, RoadnetFileDom.files[0], function(){
-    uploadFile(replayData, ReplayFileDom.files[0], function(){
         let after_update = function() {
             infoAppend("drawing roadnet");
             ready = false;
@@ -159,39 +161,42 @@ function start() {
                 loading = false;
                 return;
             }
-            try {
-                logs = replayData[0].split('\n');
-                logs.pop();
-            } catch (e) {
-                infoAppend("Reading replay file failed");
-                loading = false;
-                return;
-            }
-
-            totalStep = logs.length;
-            if (showChart) {
-                chartConainterDOM.classList.remove("d-none");
-                let chart_lines = chartData[0].split('\n');
-                if (chart_lines.length == 0) {
-                    infoAppend("Chart file is empty");
-                    showChart = false;
-                }
-                chartLog = [];
-                for (let i = 0 ; i < totalStep ; ++i) {
-                    step_data = chart_lines[i + 1].split(/[ \t]+/);
-                    chartLog.push([]);
-                    for (let j = 0; j < step_data.length; ++j) {
-                        chartLog[i].push(parseFloat(step_data[j]));
-                    }
-                }
-                chart.init(chart_lines[0], chartLog[0].length, totalStep);
-            }else {
-                chartConainterDOM.classList.add("d-none");
-            }
+            // try {
+            //     logs = replayData[0].split('\n');
+            //     logs.pop();
+            // } catch (e) {
+            //     infoAppend("Reading replay file failed");
+            //     loading = false;
+            //     return;
+            // }
+            //
+            // totalStep = logs.length;
+            // if (showChart) {
+            //     chartConainterDOM.classList.remove("d-none");
+            //     let chart_lines = chartData[0].split('\n');
+            //     if (chart_lines.length == 0) {
+            //         infoAppend("Chart file is empty");
+            //         showChart = false;
+            //     }
+            //     chartLog = [];
+            //     for (let i = 0 ; i < totalStep ; ++i) {
+            //         step_data = chart_lines[i + 1].split(/[ \t]+/);
+            //         chartLog.push([]);
+            //         for (let j = 0; j < step_data.length; ++j) {
+            //             chartLog[i].push(parseFloat(step_data[j]));
+            //         }
+            //     }
+            //     chart.init(chart_lines[0], chartLog[0].length, totalStep);
+            // }else {
+            //     chartConainterDOM.classList.add("d-none");
+            // }
 
             controls.paused = false;
             cnt = 0;
             debugMode = document.getElementById("debug-mode").checked;
+
+            replayReader = new LineNavigator(ReplayFileDom.files[0], {chunkSize: 1024 * 1024 * 8, throwOnLongLines:true});
+
             setTimeout(function () {
                 try {
                     drawRoadnet();
@@ -216,7 +221,6 @@ function start() {
             after_update();
         }
 
-    }); // replay callback
     }); // roadnet callback
 }
 
@@ -262,13 +266,13 @@ document.addEventListener('keydown', function(e) {
         updateReplaySpeed(Math.max(controls.replaySpeed / 1.5, controls.replaySpeedMin));
     } else if (e.keyCode == TWO ) {
         updateReplaySpeed(Math.min(controls.replaySpeed * 1.5, controls.replaySpeedMax));
-    } else if (e.keyCode == LEFT_BRACKET) {
-        cnt = (cnt - 1) % totalStep;
-        cnt = (cnt + totalStep) % totalStep;
-        drawStep(cnt);
-    } else if (e.keyCode == RIGHT_BRACKET) {
-        cnt = (cnt + 1) % totalStep;
-        drawStep(cnt);
+    // } else if (e.keyCode == LEFT_BRACKET) {
+    //     cnt = (cnt - 1) % totalStep;
+    //     cnt = (cnt + totalStep) % totalStep;
+    //     drawStep(cnt);
+    // } else if (e.keyCode == RIGHT_BRACKET) {
+    //     cnt = (cnt + 1) % totalStep;
+    //     drawStep(cnt);
     } else {
         keyDown.add(e.keyCode)
     }
@@ -674,6 +678,32 @@ function stringHash(str) {
     return hash;
 }
 
+replayBuffer = {
+    buffer:[],
+    start:0,
+};
+
+replayBuffer.getStep = function(step, callback) {
+    // let old_paused = controls.paused;
+    // console.log(step, this.start, this.buffer.length);
+    ready = false;
+    if (this.start + this.buffer.length > step) {
+        // controls.paused = old_paused;
+        ready = true;
+        callback(this.buffer[step - this.start]);
+    }else {
+        replayReader.readSomeLines(step, function (err, index, lines, isEof, progress) {
+            if (err) throw err;
+            ready = true;
+            replayBuffer.buffer = lines;
+            replayBuffer.start = step;
+            callback(lines[0]);
+        });
+    }
+};
+
+
+let data_ready = false;
 function drawStep(step) {
     if (showChart && (step > chart.ptr || step == 0)) {
         if (step == 0) {
@@ -683,59 +713,63 @@ function drawStep(step) {
         chart.addData(chartLog[step]);
     }
 
-    let [carLogs, tlLogs] = logs[step].split(';');
+    function callback(log) {
+        let [carLogs, tlLogs] = log.split(';');
+        tlLogs = tlLogs.split(',');
+        carLogs = carLogs.split(',');
 
-    tlLogs = tlLogs.split(',');
-    carLogs = carLogs.split(',');
-    
-    let tlLog, tlEdge, tlStatus;
-    for (let i = 0, len = tlLogs.length;i < len;++i) {
-        tlLog = tlLogs[i].split(' ');
-        tlEdge = tlLog[0];
-        tlStatus = tlLog.slice(1);
-        for (let j = 0, len = tlStatus.length;j < len;++j) {
-            trafficLightsG[tlEdge][j].tint = _statusToColor(tlStatus[j]);
-            if (tlStatus[j] == 'i' ) {
-                trafficLightsG[tlEdge][j].alpha = 0;
-            }else{
-                trafficLightsG[tlEdge][j].alpha = 1;
+        let tlLog, tlEdge, tlStatus;
+        for (let i = 0, len = tlLogs.length;i < len;++i) {
+            tlLog = tlLogs[i].split(' ');
+            tlEdge = tlLog[0];
+            tlStatus = tlLog.slice(1);
+            for (let j = 0, len = tlStatus.length;j < len;++j) {
+                trafficLightsG[tlEdge][j].tint = _statusToColor(tlStatus[j]);
+                if (tlStatus[j] == 'i' ) {
+                    trafficLightsG[tlEdge][j].alpha = 0;
+                }else{
+                    trafficLightsG[tlEdge][j].alpha = 1;
+                }
             }
         }
-    }
 
-    carContainer.removeChildren();
-    turnSignalContainer.removeChildren();
-    let carLog, position, length, width;
-    for (let i = 0, len = carLogs.length - 1;i < len;++i) {
-        carLog = carLogs[i].split(' ');
-        position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
-        length = parseFloat(carLog[5]);
-        width = parseFloat(carLog[6]);
-        carPool[i][0].position.set(position[0], position[1]);
-        carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
-        carPool[i][0].name = carLog[3];
-        let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
-        carPool[i][0].tint = CAR_COLORS[carColorId];
-        carPool[i][0].width = length;
-        carPool[i][0].height = width;
-        carContainer.addChild(carPool[i][0]);
+        carContainer.removeChildren();
+        turnSignalContainer.removeChildren();
+        let carLog, position, length, width;
+        for (let i = 0, len = carLogs.length - 1;i < len;++i) {
+            carLog = carLogs[i].split(' ');
+            position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
+            length = parseFloat(carLog[5]);
+            width = parseFloat(carLog[6]);
+            carPool[i][0].position.set(position[0], position[1]);
+            carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
+            carPool[i][0].name = carLog[3];
+            let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
+            carPool[i][0].tint = CAR_COLORS[carColorId];
+            carPool[i][0].width = length;
+            carPool[i][0].height = width;
+            carContainer.addChild(carPool[i][0]);
 
-        let laneChange = parseInt(carLog[4]) + 1;
-        carPool[i][1].position.set(position[0], position[1]);
-        carPool[i][1].rotation = carPool[i][0].rotation;
-        carPool[i][1].texture = turnSignalTextures[laneChange];
-        carPool[i][1].width = length;
-        carPool[i][1].height = width;
-        turnSignalContainer.addChild(carPool[i][1]);
+            let laneChange = parseInt(carLog[4]) + 1;
+            carPool[i][1].position.set(position[0], position[1]);
+            carPool[i][1].rotation = carPool[i][0].rotation;
+            carPool[i][1].texture = turnSignalTextures[laneChange];
+            carPool[i][1].width = length;
+            carPool[i][1].height = width;
+            turnSignalContainer.addChild(carPool[i][1]);
+        }
+        nodeCarNum.innerText = carLogs.length-1;
+        nodeTotalStep.innerText = totalStep;
+        nodeCurrentStep.innerText = cnt+1;
+        nodeProgressPercentage.innerText = (cnt / totalStep * 100).toFixed(2) + "%";
+        if (statsFile != "") {
+            if (withRange) nodeRange.value = stats[step][1];
+            nodeStats.innerText = stats[step][0].toFixed(2);
+        }
+        // console.log("FFF");
     }
-    nodeCarNum.innerText = carLogs.length-1;
-    nodeTotalStep.innerText = totalStep;
-    nodeCurrentStep.innerText = cnt+1;
-    nodeProgressPercentage.innerText = (cnt / totalStep * 100).toFixed(2) + "%";
-    if (statsFile != "") {
-        if (withRange) nodeRange.value = stats[step][1];
-        nodeStats.innerText = stats[step][0].toFixed(2);
-    }
+    replayBuffer.getStep(step, callback);
+
 }
 
 /*

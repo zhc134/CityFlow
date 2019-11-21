@@ -44,6 +44,7 @@ namespace CityFlow {
 
 
     class Vehicle {
+        friend class Flow;
         friend class Router;
         friend class LaneChange;
         friend class SimpleLaneChange;

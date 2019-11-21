@@ -21,7 +21,8 @@ namespace CityFlow {
         int cnt = 0;
         Engine *engine;
         std::string id;
-
+        bool available = true;
+        bool hasRoute = false;
     public:
         Flow(const VehicleInfo &vehicleTemplate, double timeInterval,
             Engine *engine, int startTime, int endTime, const std::string &id) 
