@@ -16,10 +16,10 @@ namespace CityFlow {
                 try {
                     vehicle = new Vehicle(vehicleTemplate, id + "_" + std::to_string(cnt++), engine);
                     vehicleTemplate.route = std::make_shared<Route>(vehicle->controllerInfo.router.getRoute());
-                    if (vehicleTemplate.route->getRoute().size() < 10) {
-                        std::cerr << "too short" << std::endl;
-                        available = false;
-                    }
+//                    if (vehicleTemplate.route->getRoute().size() < 10) {
+//                        std::cerr << "too short" << std::endl;
+//                        available = false;
+//                    }
                     hasRoute = true;
                 }catch(std::runtime_error e){
                     available = false;
