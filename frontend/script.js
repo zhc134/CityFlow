@@ -147,6 +147,11 @@ let replayReader;
 function start() {
     if (loading) return;
     loading = true;
+
+    prefetchReady = false;
+    prefetchReading = false;
+    currentDataStart = 0;
+
     infoReset();
     uploadFile(roadnetData, RoadnetFileDom.files[0], function(){
         let after_update = function() {
@@ -166,7 +171,7 @@ function start() {
             cnt = 0;
             debugMode = document.getElementById("debug-mode").checked;
 
-            replayReader = new LineNavigator(ReplayFileDom.files[0], {chunkSize: 1024 * 1024 * 64, throwOnLongLines:true});
+            replayReader = new LineNavigator(ReplayFileDom.files[0], {chunkSize: 1024 * 1024 * 256, throwOnLongLines:true});
 
             setTimeout(function () {
                 try {
@@ -678,20 +683,31 @@ function prefetchReplay(step){
 let currentData = [];
 let currentDataStart = 0;
 let waitTimer;
+let prefetchTimer;
+
+
+// Adaptive speed control
+let adaptiveStart = false;
+let adaptiveFactor = 1.01;
+
 function drawStep(step) {
     if (step >= maxLine) {
         prefetchReplay(0);
         cnt = 0;
         currentData = [];
+        currentDataStart = 0;
         return;
     }
     if (!prefetchReady && !prefetchReading && currentData.length + currentDataStart < maxLine) {
+        // prefetchTimer = setTimeout(()=>prefetchReplay(currentData.length + currentDataStart), 1);
         prefetchReplay(currentData.length + currentDataStart);
     }
     if (currentData.length + currentDataStart <= step) {
         if (!prefetchReady) {
             ready = false;
-            waitTimer = setTimeout(()=>drawStep(step), 200);
+            if (step > 0) updateReplaySpeed(controls.replaySpeed / adaptiveFactor);
+            console.log("wait");
+            waitTimer = setTimeout(()=>drawStep(step), 100);
             return;
         }else{
             currentData = prefetchData;
@@ -701,7 +717,13 @@ function drawStep(step) {
         }
     }
     if (currentData[step-currentDataStart] == "") return;
-    let [carLogs, tlLogs] = currentData[step - currentDataStart].split(';');
+    let carLogs, tlLogs;
+    try {
+        [carLogs, tlLogs] = currentData[step - currentDataStart].split(';');
+    }catch(e){
+        console.log(e);
+        return ;
+    }
     tlLogs = tlLogs.split(',');
     carLogs = carLogs.split(',');
 
