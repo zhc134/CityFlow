@@ -691,6 +691,7 @@ let adaptiveStart = false;
 let adaptiveFactor = 1.01;
 
 let speedColorMax = 16.67;
+let saturation = 0.8;
 
 function drawStep(step) {
     if (step >= maxLine) {
@@ -759,9 +760,9 @@ function drawStep(step) {
         carPool[i][0].name = carLog[3];
         let speedColor;
         if (speedRatio > 0.5){
-            speedColor = PIXI.utils.rgb2hex([(1-speedRatio)/speedRatio, 1, 0]);
+            speedColor = PIXI.utils.rgb2hex([saturation*(1-speedRatio)/speedRatio, saturation, 0]);
         }else{
-            speedColor = PIXI.utils.rgb2hex([1, speedRatio/(1-speedRatio), 0]);
+            speedColor = PIXI.utils.rgb2hex([saturation, saturation*speedRatio/(1-speedRatio), 0]);
         }
 
         // console.log(speedColor);
