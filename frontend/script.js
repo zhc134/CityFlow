@@ -705,6 +705,9 @@ let prefetchTimer;
 let adaptiveStart = false;
 let adaptiveFactor = 1.01;
 
+let speedColorMax = 16.67;
+let saturation = 0.8;
+
 function drawStep(step) {
     if (step >= maxLine) {
         prefetchReplay(0);
@@ -766,11 +769,20 @@ function drawStep(step) {
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
         length = parseFloat(carLog[5]) * carScaleFactor;
         width = parseFloat(carLog[6]) * carScaleFactor;
+        vehicleSpeed = Math.min(parseFloat(carLog[7]), speedColorMax);
+        speedRatio = vehicleSpeed / speedColorMax;
         carPool[i][0].position.set(position[0], position[1]);
         carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
         carPool[i][0].name = carLog[3];
-        let carColorId = stringHash(carLog[3]) % CAR_COLORS_NUM;
-        carPool[i][0].tint = CAR_COLORS[carColorId];
+        let speedColor;
+        if (speedRatio > 0.5){
+            speedColor = PIXI.utils.rgb2hex([saturation*(1-speedRatio)/speedRatio, saturation, 0]);
+        }else{
+            speedColor = PIXI.utils.rgb2hex([saturation, saturation*speedRatio/(1-speedRatio), 0]);
+        }
+
+        // console.log(speedColor);
+        carPool[i][0].tint = speedColor;
         carPool[i][0].width = length;
         carPool[i][0].height = width;
         carContainer.addChild(carPool[i][0]);
