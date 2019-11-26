@@ -8,6 +8,7 @@ from mpmath import degrees, radians
 import copy
 import math
 import json
+import random
 
 if platform == "linux" or platform == "linux2":
     # this is linux
@@ -27,7 +28,7 @@ if platform == "linux" or platform == "linux2":
         else:
             raise EnvironmentError("Please set SUMO_HOME environment variable or install traci as python module!")
 elif platform == "win32":
-    os.environ['SUMO_HOME'] = 'D:\\software\\sumo-0.32.0'
+    os.environ['SUMO_HOME'] = 'C:\\Program Files (x86)\\Eclipse\\Sumo'
     try:
         import traci
         import traci.constants as tc
@@ -202,15 +203,32 @@ def process_intersection_simple_phase(intersection):
     if intersection['virtual']:
         return intersection
 
-    all_green = {
-        "time": 30,
-        "availableRoadLinks": intersection['trafficLight']['roadLinkIndices']
-    }
-    all_red = {
-        "time": 30,
-        "availableRoadLinks": []
-    }
-    lightphases = [all_green]
+    tmp = list(intersection['trafficLight']['roadLinkIndices'])
+    if len(tmp) <= 2:
+        all_green = {
+            "time": 30+random.randint(-10,10),
+            "availableRoadLinks": tmp
+        }
+        lightphases = [all_green]
+    else:
+        random.shuffle(tmp)
+        green1 = {
+            "time": 30+random.randint(-10,10),
+            "availableRoadLinks": tmp[:len(tmp)//2]
+        }
+        all_red = {
+            "time": 5,
+            "availableRoadLinks": []
+        }
+        green2 = {
+            "time": 30+random.randint(-10,10),
+            "availableRoadLinks": tmp[len(tmp)//2:]
+        }
+        all_red = {
+            "time": 5,
+            "availableRoadLinks": []
+        }
+        lightphases = [green1, all_red, green2, all_red]
     intersection['trafficLight']['lightphases'] = lightphases
     return intersection
 
@@ -309,7 +327,7 @@ def node_to_intersection(node,tls_dict,edge_dict):
     intersection = {
         "id": node.getID(),
         "point": {"x": node_coord[0], "y": node_coord[1]},
-        "width": 0,  # warning.路口宽度对于任意路口是未定义的.取15
+        "width": 15,  # warning.路口宽度对于任意路口是未定义的.取15
         "roads": [edge.getID() for edge in node.getIncoming() + node.getOutgoing()],
 
         # "_roads":[{'id':}]
@@ -382,11 +400,11 @@ def node_to_intersection(node,tls_dict,edge_dict):
         pass
     if node_type in ['right_before_left']:
         pass
-    if node_type in ['dead_end','priority','right_before_left']:
+    if node_type in ['dead_end','priority','right_before_left'] or node_type in ['traffic_light'] and not node.getID() in tls_dict:
         intersection = process_intersection_simple_phase(intersection)
 
 
-    if node_type in ['traffic_light']:
+    if node_type in ['traffic_light'] and node.getID() in tls_dict:
         print(node.getID())
         if SUMO_PROGRAM:
             all_phase = []
@@ -396,9 +414,10 @@ def node_to_intersection(node,tls_dict,edge_dict):
             for connec in tls_dict[nodeid]._connections:
                 G_to_lane_dict[connec[-1]] = connec[0].getID()
 
-            for phase,duration in tls_dict[nodeid]._programs['0']._phases:
+            for phase in tls_dict[nodeid]._programs['0']._phases:
+                duration = phase.duration
                 lane_list = []
-                for i,alpha in enumerate(phase):
+                for i,alpha in enumerate(phase.state):
                     if (alpha == 'G' or alpha == 'g') and i in G_to_lane_dict.keys():
                         lane_list.append(G_to_lane_dict[i])
 
@@ -461,18 +480,15 @@ def get_final_roads(net):
         start_coord = start_intersection.getCoord()
         end_intersection = edge.getToNode()
         end_coord = end_intersection.getCoord()
+        points = edge._rawShape3D
+        points_dict = []
+        for point in points:
+            points_dict.append({"x": point[0], "y": point[1]})
+        if len(points_dict) == 0:
+            points_dict = [{"x": start_coord[0],"y": start_coord[1]},{"x": end_coord[0],"y": end_coord[1]}]
         road = {
             "id": edge.getID(),
-            "points": [
-                {
-                    "x": start_coord[0],
-                    "y": start_coord[1],
-                },
-                {
-                    "x": end_coord[0],
-                    "y": end_coord[1],
-                }
-            ],
+            "points": points_dict,
             "lanes": [
             ],
             "startIntersection": start_intersection.getID(),
@@ -510,6 +526,8 @@ def main(args):
     edge_dict = {}
     for edge_ in net.getEdges():
         edge_dict[edge_.getID()] = edge_._lanes
+
+    print(edge_dict)
 
     final_intersections = get_final_intersections(net,tls_dict,edge_dict)
 

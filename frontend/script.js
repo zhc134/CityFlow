@@ -18,11 +18,18 @@ CAR_LENGTH = 5;
 CAR_WIDTH = 2;
 CAR_COLOR = 0xe8bed4;
 
-CAR_COLORS = [0xf2bfd7, // pink
-            0xb7ebe4,   // cyan
-            0xdbebb7,   // blue
-            0xf5ddb5, 
-            0xd4b5f5];
+function computeDynamicCarScale(scale) {
+    if (scale >= 2) return 1;
+    if (scale >= 1 && scale < 2) return 2 / scale;
+    return Math.min(1 / scale + 1, 10);
+}
+
+CAR_COLORS = [//0xf2bfd7, // pink
+            //0xb7ebe4,   // cyan
+            //0xdbebb7,   // blue
+            //0xf5ddb5, 
+            //0xd4b5f5,
+            0xff0000];
 CAR_COLORS_NUM = CAR_COLORS.length;
 
 NUM_CAR_POOL = 150000;
@@ -311,6 +318,14 @@ function drawRoadnet() {
     app.stage.addChild(viewport);
     simulatorContainer = new Container();
     viewport.addChild(simulatorContainer);
+    
+    let sprite = new Sprite.fromImage('xh.jpg');
+    simulatorContainer.addChild(sprite);
+    sprite.scale.set(2.08, 2.09);
+    sprite.rotation = 0.01;
+    //sprite.angle = 0.8;
+    sprite.x = 1380;
+    sprite.y = -21400;
 
     roadnet = simulation.static;
     nodes = [];
@@ -745,11 +760,12 @@ function drawStep(step) {
     carContainer.removeChildren();
     turnSignalContainer.removeChildren();
     let carLog, position, length, width;
+    carScaleFactor = computeDynamicCarScale(viewport.scale.x);
     for (let i = 0, len = carLogs.length - 1;i < len;++i) {
         carLog = carLogs[i].split(' ');
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
-        length = parseFloat(carLog[5]);
-        width = parseFloat(carLog[6]);
+        length = parseFloat(carLog[5]) * carScaleFactor;
+        width = parseFloat(carLog[6]) * carScaleFactor;
         carPool[i][0].position.set(position[0], position[1]);
         carPool[i][0].rotation = 2*Math.PI - parseFloat(carLog[2]);
         carPool[i][0].name = carLog[3];

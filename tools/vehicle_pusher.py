@@ -1,4 +1,4 @@
-file_path = "../config/roadnet_manhattan.json"
+file_path = "../local/map_xuhui.json"
 import json
 import itertools
 json_roadnet = json.load(open(file_path))
@@ -39,7 +39,7 @@ od_pair = list(itertools.product(roads_name, roads_name))
 
 # for x in od_pair:
 import random
-od_pair_sample = random.sample(od_pair, 2000)
+od_pair_sample = random.sample(od_pair, 500)
 print(len(od_pair))
 flow = [
     {
@@ -55,11 +55,11 @@ flow = [
             "headwayTime": 1.5
         },
         "route":x,
-        "interval": 5.0,
+        "interval": 20.0,
         "startTime": random.randint(0,100),
         "endTime": -1
     }
     for x in od_pair_sample
 ]
 
-json.dump(flow, open("../config/flow_manhattan_dense.json", "w"))
+json.dump(flow, open("../local/flow_xuhui.json", "w"))
