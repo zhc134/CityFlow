@@ -230,7 +230,7 @@ namespace CityFlow {
                             }
                             Point mid1 = Point(start.x + gap1X,start.y + gap1Y);
                             Point mid2 = Point(end.x + gap2X,end.y + gap2Y);
-                            int numPoints = 10;
+                            int numPoints = 5;
                             for (int i = 0; i <= numPoints; i++) {
                                 Point p1 = getPoint(start, mid1, i / double(numPoints));
                                 Point p2 = getPoint(mid1, mid2, i / double(numPoints));
@@ -459,6 +459,7 @@ namespace CityFlow {
             double width = startIntersection->width;
             Point p1 = roadPoints[0];
             Point p2 = roadPoints[1];
+            //width = max2double(0, width - (p1 - startIntersection->point).len());
             roadPoints[0] = p1 + (p2 - p1).unit() * width;
         }
 
@@ -466,6 +467,7 @@ namespace CityFlow {
             double width = endIntersection->width;
             Point p1 = roadPoints[roadPoints.size() - 2];
             Point p2 = roadPoints[roadPoints.size() - 1];
+            //width = max2double(0, width - (p2 - endIntersection->point).len());
             roadPoints[roadPoints.size() - 1] = p2 - (p2 - p1).unit() * width;
         }
 
@@ -747,36 +749,20 @@ FOUND:;
         // Calculate the convex hull as the outline of the intersection
         std::vector<Point> points;
         points.push_back(getPosition());
-        for (auto road : getRoads()){
-            Vector roadDirect = road->getEndIntersection().getPosition() - road->getStartIntersection().getPosition();
-            roadDirect = roadDirect.unit();
-            Vector pDirect = roadDirect.normal();
+        for (auto road : getRoads()) {
+            const std::vector<Point> roadPoints = road->getPoints();
             if (&road->getStartIntersection() == this) {
-                roadDirect = -roadDirect;
-            }
-            /*                          <deltaWidth>
-             *                   [pointB *]------[pointB1 *]--------
-             *                       |
-             *                       v
-             *                   [pDirect] <- roadDirect <- Road
-             *                       |
-             *                       v
-             * [intersection]----[pointA *]------[pointA1 *]--------
-             */
-            double roadWidth = road->getWidth();
-            double deltaWidth = 0.5 * min2double(width, roadWidth);
-            deltaWidth = max2double(deltaWidth, 5);
-
-            Point pointA = getPosition() -  roadDirect * width;
-            Point pointB  = pointA - pDirect * roadWidth;
-            points.push_back(pointA);
-            points.push_back(pointB);
-
-            if (deltaWidth < road->averageLength()) {
-                Point pointA1 = pointA - roadDirect * deltaWidth;
-                Point pointB1 = pointB - roadDirect * deltaWidth;
-                points.push_back(pointA1);
-                points.push_back(pointB1);
+                Point p1 = roadPoints[0];
+                Point p2 = roadPoints[1];
+                p1 = p1 + (p2 - p1).unit() * width;
+                points.push_back(p1);
+                points.push_back(p1 + (p1 - p2).unit().normal() * road->getWidth());
+            } else {
+                Point p1 = roadPoints[roadPoints.size() - 1];
+                Point p2 = roadPoints[roadPoints.size() - 2];
+                p1 = p1 + (p2 - p1).unit() * width;
+                points.push_back(p1);
+                points.push_back(p1 + (p2 - p1).unit().normal() * road->getWidth());
             }
         }
 

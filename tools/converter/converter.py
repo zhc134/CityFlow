@@ -373,7 +373,7 @@ def node_to_intersection(node,tls_dict,edge_dict):
                         "startLaneIndex": _cityflow_get_lane_index_in_edge_cor(start_lane, start_road),
                         "endLaneIndex": end_inx,
                         # ytodo: 或许改为起始lane结束点，路口点，结束lane起始点。
-                        "points": [start_point, end_point]  # warning 飞行模式
+                        "points": []  # warning 飞行模式
                     }
                     roadLink["laneLinks"].append(path)
             else:
@@ -385,7 +385,7 @@ def node_to_intersection(node,tls_dict,edge_dict):
                     path = {
                         "startLaneIndex": _cityflow_get_lane_index_in_edge(start_lane, start_road),
                         "endLaneIndex": _cityflow_get_lane_index_in_edge(end_lane, end_road),
-                        "points": [start_point, end_point]  # warning 飞行模式
+                        "points": []  # warning 飞行模式
                     }
                     roadLink["laneLinks"].append(path)
         roadLinks.append(roadLink)
@@ -472,6 +472,10 @@ def get_final_intersections(net,tls_dict,edge_dict):
 
     return final_intersections
 
+
+def get_distance(point, point_dict):
+    return ((point[0] - point_dict["x"]) ** 2 + (point[1] - point_dict["y"]) ** 2)**0.5
+
 def get_final_roads(net):
     edges = net.getEdges()
     final_roads = []
@@ -482,10 +486,13 @@ def get_final_roads(net):
         end_coord = end_intersection.getCoord()
         points = edge._rawShape3D
         points_dict = []
-        for point in points:
-            points_dict.append({"x": point[0], "y": point[1]})
-        if len(points_dict) == 0:
+        if len(points) == 0:
             points_dict = [{"x": start_coord[0],"y": start_coord[1]},{"x": end_coord[0],"y": end_coord[1]}]
+        else:
+            for point in points:
+                if len(points_dict) > 1 and get_distance(point, points_dict[-1]) < 20:
+                    points_dict.pop()
+                points_dict.append({"x": point[0], "y": point[1]})
         road = {
             "id": edge.getID(),
             "points": points_dict,

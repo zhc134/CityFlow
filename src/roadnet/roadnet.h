@@ -201,6 +201,8 @@ namespace CityFlow {
 
         const std::vector<Lane *> &getLanePointers();
 
+        const std::vector<Point> &getPoints() { return points; }
+
         void buildSegmentationByInterval(double interval);
 
         bool connectedToRoad(const Road * road) const;

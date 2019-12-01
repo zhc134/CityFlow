@@ -21,7 +21,7 @@ CAR_COLOR = 0xe8bed4;
 function computeDynamicCarScale(scale) {
     if (scale >= 2) return 1;
     if (scale >= 1 && scale < 2) return 2 / scale;
-    return Math.min(1 / scale + 1, 10);
+    return Math.min(1 / scale + 1, 20);
 }
 
 CAR_COLORS = [//0xf2bfd7, // pink
@@ -321,11 +321,12 @@ function drawRoadnet() {
     
     let sprite = new Sprite.fromImage('xh.jpg');
     simulatorContainer.addChild(sprite);
+    sprite.alpha = 0.6;
     sprite.scale.set(2.08, 2.09);
     sprite.rotation = 0.01;
     //sprite.angle = 0.8;
-    sprite.x = 1380;
-    sprite.y = -21400;
+    sprite.x = 1420;
+    sprite.y = -21398;
 
     roadnet = simulation.static;
     nodes = [];
