@@ -58,7 +58,7 @@ flow = [
     {
         "vehicle": vehicle_template,
         "route":x,
-        "interval": 30.0,
+        "interval": 50.0,
         "startTime": random.randint(0,100),
         "endTime": -1
     }
