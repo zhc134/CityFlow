@@ -389,7 +389,8 @@ function drawRoadnet() {
         drawEdge(edges[edgeId], edgeGraphics);
     }
     let bounds = simulatorContainer.getBounds();
-    simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+    //simulatorContainer.pivot.set(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+    simulatorContainer.pivot.set(8436.08, -12640.61);
     simulatorContainer.position.set(renderer.width / 2, renderer.height / 2);
     simulatorContainer.addChild(trafficLightContainer);
 

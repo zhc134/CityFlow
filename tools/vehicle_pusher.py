@@ -41,25 +41,44 @@ od_pair = list(itertools.product(roads_name, roads_name))
 import random
 od_pair_sample = random.sample(od_pair, 500)
 print(len(od_pair))
+
+vehicle_template = {
+    "length": 5.0,
+    "width": 2.0,
+    "maxPosAcc": 2.0,
+    "maxNegAcc": 4.5,
+    "usualPosAcc": 2.0,
+    "usualNegAcc": 4.5,
+    "minGap": 2.5,
+    "maxSpeed": 16.67,
+    "headwayTime": 1.5
+}
+
 flow = [
     {
-        "vehicle": {
-            "length": 5.0,
-            "width": 2.0,
-            "maxPosAcc": 2.0,
-            "maxNegAcc": 4.5,
-            "usualPosAcc": 2.0,
-            "usualNegAcc": 4.5,
-            "minGap": 2.5,
-            "maxSpeed": 16.67,
-            "headwayTime": 1.5
-        },
+        "vehicle": vehicle_template,
         "route":x,
-        "interval": 20.0,
+        "interval": 30.0,
         "startTime": random.randint(0,100),
         "endTime": -1
     }
     for x in od_pair_sample
 ]
+
+xjh_flows = [
+    ["492977118#4","492977118#6","11960404#2","11960404#3","465149399"],
+    ["664078697#8","657311255","492981116#2","492981116#3","50409876#1","50409876#4","50409876#5"],
+    ["682286685#2","682286685#3","682286685#4","12272379#0","12272379#1","465128019#0","465128019#1"],
+    ["682286685#2","682286685#3","682286685#4","12272375#1","12272375#2","492977121#0"],
+    ["50417295#6","12272375#1","12272375#2","492977121#0"]
+]
+for xjh_flow in xjh_flows:
+    flow.append({
+        "vehicle": vehicle_template,
+        "route": xjh_flow,
+        "interval": 15.0,
+        "startTime": random.randint(0,20),
+        "endTime": -1
+    })
 
 json.dump(flow, open("../local/flow_xuhui.json", "w"))
