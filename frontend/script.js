@@ -3,6 +3,9 @@
  */
 id = Math.random().toString(36).substring(2, 15);
 
+LEFT_BOUND = 1500
+RIGHT_BOUND = 11600
+
 BACKGROUND_COLOR = 0xe8ebed;
 LANE_COLOR = 0x586970;
 LANE_BORDER_WIDTH = 1;
@@ -322,11 +325,12 @@ function drawRoadnet() {
     let sprite = new Sprite.fromImage('xh.jpg');
     simulatorContainer.addChild(sprite);
     sprite.alpha = 0.6;
-    sprite.scale.set(2.08, 2.09);
-    sprite.rotation = 0.01;
+    //sprite.scale.set(2.08, 2.09);
+    sprite.scale.set(2.1160, 2.0992);
+    sprite.rotation = 0.0148;
     //sprite.angle = 0.8;
-    sprite.x = 1420;
-    sprite.y = -21398;
+    sprite.x = 1334;
+    sprite.y = -21482;
 
     roadnet = simulation.static;
     nodes = [];
@@ -505,6 +509,9 @@ function drawNode(node, graphics) {
     graphics.beginFill(LANE_COLOR);
     let outline = node.outline;
     for (let i = 0 ; i < outline.length ; i+=2) {
+        if (outline[i] > RIGHT_BOUND || outline[i] < LEFT_BOUND) return;
+    }
+    for (let i = 0 ; i < outline.length ; i+=2) {
         outline[i+1] = -outline[i+1];
         if (i == 0)
             graphics.moveTo(outline[i], outline[i+1]);
@@ -531,6 +538,10 @@ function drawEdge(edge, graphics) {
     let from = edge.from;
     let to = edge.to;
     let points = edge.points;
+
+    for (let i = 0;i < points.length;++i) {
+        if (points[i].x > RIGHT_BOUND || points[i].x < LEFT_BOUND) return;
+    }
 
     let pointA, pointAOffset, pointB, pointBOffset;
     let prevPointBOffset = null;
@@ -751,12 +762,14 @@ function drawStep(step) {
         tlLog = tlLogs[i].split(' ');
         tlEdge = tlLog[0];
         tlStatus = tlLog.slice(1);
+        tlGraphics = trafficLightsG[tlEdge];
+        if (!tlGraphics) continue;
         for (let j = 0, len = tlStatus.length;j < len;++j) {
-            trafficLightsG[tlEdge][j].tint = _statusToColor(tlStatus[j]);
+            tlGraphics[j].tint = _statusToColor(tlStatus[j]);
             if (tlStatus[j] == 'i' ) {
-                trafficLightsG[tlEdge][j].alpha = 0;
+                tlGraphics[j].alpha = 0;
             }else{
-                trafficLightsG[tlEdge][j].alpha = 1;
+                tlGraphics[j].alpha = 1;
             }
         }
     }
@@ -768,6 +781,7 @@ function drawStep(step) {
     for (let i = 0, len = carLogs.length - 1;i < len;++i) {
         carLog = carLogs[i].split(' ');
         position = transCoord([parseFloat(carLog[0]), parseFloat(carLog[1])]);
+        if (position[0] > RIGHT_BOUND || position[0] < LEFT_BOUND) continue;
         length = parseFloat(carLog[5]) * carScaleFactor;
         width = parseFloat(carLog[6]) * carScaleFactor;
         vehicleSpeed = Math.min(parseFloat(carLog[7]), speedColorMax);

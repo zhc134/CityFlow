@@ -81,6 +81,7 @@ DEBUG = False
 TRUE_CORRECTION_lane = True
 SUMO_PROGRAM = True
 
+INTERSECTION_WIDTH = 15
 
 def get_direction_fron_connection(connection):
     _map = {
@@ -327,7 +328,7 @@ def node_to_intersection(node,tls_dict,edge_dict):
     intersection = {
         "id": node.getID(),
         "point": {"x": node_coord[0], "y": node_coord[1]},
-        "width": 15,  # warning.路口宽度对于任意路口是未定义的.取15
+        "width": INTERSECTION_WIDTH,
         "roads": [edge.getID() for edge in node.getIncoming() + node.getOutgoing()],
 
         # "_roads":[{'id':}]
@@ -489,10 +490,26 @@ def get_final_roads(net):
         if len(points) == 0:
             points_dict = [{"x": start_coord[0],"y": start_coord[1]},{"x": end_coord[0],"y": end_coord[1]}]
         else:
-            for point in points:
-                if len(points_dict) > 1 and get_distance(point, points_dict[-1]) < 20:
-                    points_dict.pop()
+            point_num = len(points)
+
+            # insert first point
+            point = points[0]
+            points_dict.append({"x": point[0], "y": point[1]})
+
+            # skip points within distance then insert
+            i = 1
+            while i < point_num - 1 and get_distance(points[i], points_dict[0]) < 16:
+                i += 1
+            for j in range(i, point_num-1):
+                point = points[j]
                 points_dict.append({"x": point[0], "y": point[1]})
+
+            # remove points within distance then insert last point
+            while len(points_dict) > 1 and get_distance(points[-1], points_dict[-1]) < 16:
+                points_dict.pop()
+            point = points[-1]
+            points_dict.append({"x": point[0], "y": point[1]})
+
         road = {
             "id": edge.getID(),
             "points": points_dict,

@@ -55,7 +55,7 @@ flow = [
             "headwayTime": 1.5
         },
         "route":x,
-        "interval": 30.0,
+        "interval": 20.0,
         "startTime": random.randint(0,100),
         "endTime": -1
     }

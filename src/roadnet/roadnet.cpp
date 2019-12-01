@@ -767,7 +767,7 @@ FOUND:;
         }
 
         auto minIter = std::min_element(points.begin(), points.end(),
-                [](const Point &a, const Point &b){ return a.y < b.y; });
+                [](const Point &a, const Point &b){ return a.y == b.y ? a.x < b.x : a.y < b.y; });
 
         Point p0 = *minIter;
         std::vector<Point> stack;
@@ -775,8 +775,21 @@ FOUND:;
         points.erase(minIter);
 
         std::sort(points.begin(), points.end(),
-                [&p0](const Point &a, const Point &b)
-                {return (a - p0).ang() < (b - p0).ang(); });
+                [&p0](const Point &a, const Point &b) {
+                    double cp = crossMultiply(a - p0, b - p0);
+                    return cp == 0 ? (a-p0).len() > (b-p0).len() : cp > 0;
+                });
+        
+        // reverse on-same-line points on start edge
+        size_t startEdgeEnd = 1;
+        for (;startEdgeEnd < points.size();++startEdgeEnd) {
+            if (crossMultiply(points[startEdgeEnd] - p0, points[0] - p0) != 0) break;
+        }
+        for (size_t i = 0;i < startEdgeEnd / 2;++i) {
+            auto tmp = points[i];
+            points[i] = points[startEdgeEnd - i - 1];
+            points[startEdgeEnd - i - 1] = tmp;
+        }
 
         for (size_t i = 0 ; i < points.size(); ++i) {
             Point &point = points[i];

@@ -522,10 +522,10 @@ namespace CityFlow {
                     continue;
                 }
 
-                bool can_go = true;
+                bool can_go = false;
                 for (LaneLink *laneLink : lane.getLaneLinks()) {
-                    if (!laneLink->isAvailable()) {
-                        can_go = false;
+                    if (laneLink->getRoadLinkType() != RoadLinkType::turn_right && laneLink->isAvailable()) {
+                        can_go = true;
                         break;
                     }
                 }
